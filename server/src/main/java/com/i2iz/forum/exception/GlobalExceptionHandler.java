@@ -27,6 +27,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(err);
     }
 
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorDto> handleValidationException(org.springframework.web.bind.MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult().getAllErrors().getFirst().getDefaultMessage();
+        ErrorDto err = new ErrorDto(HttpStatus.BAD_REQUEST.value(), message);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(err);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDto> handleException(Exception ex) {
         ErrorDto err = new ErrorDto(HttpStatus.INTERNAL_SERVER_ERROR.value(), "알 수 없는 오류가 발생했습니다.");
