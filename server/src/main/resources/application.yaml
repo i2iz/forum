@@ -21,3 +21,9 @@ spring:
 server:
   servlet:
     context-path: /api
+
+security:
+  jwt:
+    token:
+      secret-key: 229873c5f39c53a6d93a26b3a367babe5873c9abb25895075670c30c201f5ecf # 실제 배포하는 프로젝트가 아니므로 임의 설정
+      expire-length: 3600000 # 1시간
