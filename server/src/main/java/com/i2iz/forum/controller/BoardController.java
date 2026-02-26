@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,13 +20,23 @@ public class BoardController {
     private final BoardService boardService;
 
     @GetMapping
-    public Map<String, Object> list(@RequestParam(defaultValue = "0") int page) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("notices", boardService.getNotices());
+    public Map<String, Object> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String searchType,
+            @RequestParam(required = false) String keyword) {
 
-        Page<Board> postPage = boardService.getRegularPosts(page);
+        Map<String, Object> response = new HashMap<>();
+
+        if (page == 0 && (keyword == null || keyword.isBlank())) {
+            response.put("notices", boardService.getNotices());
+        } else {
+            response.put("notices", new ArrayList<>());
+        }
+
+        Page<Board> postPage = boardService.getPosts(page, searchType, keyword);
         response.put("posts", postPage.getContent());
         response.put("totalPages", postPage.getTotalPages());
+        response.put("currentPage", postPage.getNumber());
 
         return response;
     }

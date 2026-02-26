@@ -1,36 +1,63 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
-import Header from "../components/Header"; // 추가
+import Header from "../components/Header";
 import ProfileCard from "../components/ProfileCard";
 
 const MainPage = () => {
   const [notices, setNotices] = useState([]);
   const [posts, setPosts] = useState([]);
+  const [totalPages, setTotalPages] = useState(0);
+
+  const location = useLocation();
+  const query = new URLSearchParams(location.search);
+  const page = parseInt(query.get("page") || "0");
+  const searchType = query.get("searchType") || "title";
+  const keyword = query.get("keyword") || "";
 
   useEffect(() => {
     axios
-      .get("/api/boards")
+      .get("/api/boards", {
+        params: { page, searchType, keyword },
+      })
       .then((res) => {
         setNotices(res.data.notices || []);
         setPosts(res.data.posts || []);
+        setTotalPages(res.data.totalPages || 0);
       })
       .catch((err) => console.error(err));
-  }, []);
+  }, [page, searchType, keyword]);
+
+  const renderPagination = () => {
+    const pages = [];
+    const start = Math.max(0, page - 4);
+    const end = Math.min(totalPages - 1, start + 9);
+
+    for (let i = start; i <= end; i++) {
+      pages.push(
+        <Link
+          key={i}
+          to={`/?page=${i}&searchType=${searchType}&keyword=${keyword}`}
+          className={`px-3 py-1 rounded ${i === page ? "bg-[#E2F0D9] text-gray-700 font-bold" : "text-gray-400 hover:bg-gray-50"}`}
+        >
+          {i + 1}
+        </Link>,
+      );
+    }
+    return pages;
+  };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white text-gray-800">
       <Header />
-
       <main className="max-w-6xl w-full mx-auto flex flex-col md:flex-row gap-6 p-6 flex-1">
         <section className="w-full md:w-[70%]">
-          <div className="bg-white border border-[#E2F0D9] rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-white border border-[#E2F0D9] rounded-lg shadow-sm overflow-hidden flex flex-col min-h-[600px]">
             <h2 className="text-xl font-semibold p-4 border-b text-gray-600 bg-[#F7FCF5]">
-              최신 게시글
+              {keyword ? `'${keyword}' 검색 결과` : "최신 게시글"}
             </h2>
 
-            <div className="divide-y divide-gray-100">
-              {/* 공지사항 렌더링 */}
+            <div className="divide-y divide-gray-100 flex-1">
               {notices.map((notice) => (
                 <Link
                   to={`/boards/${notice.id}`}
@@ -56,7 +83,6 @@ const MainPage = () => {
                 </Link>
               ))}
 
-              {/* 일반 게시글 렌더링 */}
               {posts.length > 0 ? (
                 posts.map((post) => (
                   <Link
@@ -86,7 +112,7 @@ const MainPage = () => {
                       <span className="text-sm text-gray-600 font-semibold">
                         {post.writer?.nickname}
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-[10px] text-gray-400">
                         {new Date(post.createdAt).toLocaleDateString()}
                       </span>
                     </div>
@@ -94,9 +120,25 @@ const MainPage = () => {
                 ))
               ) : (
                 <div className="text-gray-400 text-center py-20">
-                  게시글이 아직 없습니다.
+                  게시글이 없습니다.
                 </div>
               )}
+            </div>
+
+            <div className="p-4 border-t flex justify-center items-center gap-2 bg-[#F7FCF5]">
+              <Link
+                to={`/?page=${Math.max(0, page - 1)}&searchType=${searchType}&keyword=${keyword}`}
+                className={`text-sm ${page === 0 ? "text-gray-200 pointer-events-none" : "text-gray-500 hover:text-gray-800"}`}
+              >
+                이전
+              </Link>
+              <div className="flex gap-1">{renderPagination()}</div>
+              <Link
+                to={`/?page=${Math.min(totalPages - 1, page + 1)}&searchType=${searchType}&keyword=${keyword}`}
+                className={`text-sm ${page >= totalPages - 1 ? "text-gray-200 pointer-events-none" : "text-gray-500 hover:text-gray-800"}`}
+              >
+                다음
+              </Link>
             </div>
           </div>
         </section>

@@ -45,9 +45,24 @@ public class BoardService {
         return boardRepository.findByCategoryNameAndUpdatedAtAfterOrderByCreatedAtDesc("공지사항", tenDaysAgo);
     }
 
-    public Page<Board> getRegularPosts(int page) {
+    public Page<Board> getPosts(int page, String searchType, String keyword) {
         PageRequest pageRequest = PageRequest.of(page, 25);
-        return boardRepository.findByCategoryNameNotOrderByCreatedAtDesc("공지사항", pageRequest);
+        String noticeCategory = "공지사항";
+
+        if (keyword == null || keyword.isBlank()) {
+            return boardRepository.findByCategoryNameNotOrderByCreatedAtDesc(noticeCategory, pageRequest);
+        }
+
+        switch (searchType) {
+            case "title":
+                return boardRepository.findByCategoryNameNotAndTitleContainingOrderByCreatedAtDesc(noticeCategory, keyword, pageRequest);
+            case "content":
+                return boardRepository.findByCategoryNameNotAndContentContainingOrderByCreatedAtDesc(noticeCategory, keyword, pageRequest);
+            case "nickname":
+                return boardRepository.findByNickname(noticeCategory, keyword, pageRequest);
+            default:
+                return boardRepository.findByCategoryNameNotOrderByCreatedAtDesc(noticeCategory, pageRequest);
+        }
     }
 
     public Board findById(Long id) {
