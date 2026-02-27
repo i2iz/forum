@@ -26,4 +26,21 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     // 작성자 닉네임 검색
     @Query("SELECT b FROM Board b WHERE b.category.name <> :categoryName AND b.writer.nickname LIKE %:nickname% ORDER BY b.createdAt DESC")
     Page<Board> findByNickname(@Param("categoryName") String categoryName, @Param("nickname") String nickname, Pageable pageable);
+
+    @Query(value = "SELECT b.* FROM board b " +
+            "JOIN ( " +
+            "    SELECT id FROM board " +
+            "    WHERE category_id <> (SELECT id FROM category WHERE name = :noticeCategory) " +
+            "    ORDER BY id DESC " +
+            "    LIMIT :limit OFFSET :offset " +
+            ") as temp ON b.id = temp.id",
+            nativeQuery = true)
+    List<Board> findPostsDeferredJoin(@Param("noticeCategory") String noticeCategory,
+                                      @Param("limit") int limit,
+                                      @Param("offset") int offset);
+
+    @Query(value = "SELECT count(id) FROM board " +
+            "WHERE category_id <> (SELECT id FROM category WHERE name = :noticeCategory)",
+            nativeQuery = true)
+    long countPostsExcludingCategory(@Param("noticeCategory") String noticeCategory);
 }

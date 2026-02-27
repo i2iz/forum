@@ -4,6 +4,7 @@ import com.i2iz.forum.entity.*;
 import com.i2iz.forum.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,11 +47,16 @@ public class BoardService {
     }
 
     public Page<Board> getPosts(int page, String searchType, String keyword) {
+        int pageSize = 25;
         PageRequest pageRequest = PageRequest.of(page, 25);
         String noticeCategory = "공지사항";
 
         if (keyword == null || keyword.isBlank()) {
-            return boardRepository.findByCategoryNameNotOrderByCreatedAtDesc(noticeCategory, pageRequest);
+            int offset = page * pageSize;
+            List<Board> content = boardRepository.findPostsDeferredJoin(noticeCategory, pageSize, offset);
+            long total = boardRepository.countPostsExcludingCategory(noticeCategory);
+
+            return new PageImpl<>(content, pageRequest, total);
         }
 
         switch (searchType) {
