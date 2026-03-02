@@ -39,8 +39,6 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
                                       @Param("limit") int limit,
                                       @Param("offset") int offset);
 
-    @Query(value = "SELECT count(id) FROM board " +
-            "WHERE category_id <> (SELECT id FROM category WHERE name = :noticeCategory)",
-            nativeQuery = true)
-    long countPostsExcludingCategory(@Param("noticeCategory") String noticeCategory);
+    @Query("SELECT COUNT(b) FROM Board b WHERE b.category.name <> :categoryName")
+    long countByCategoryNameNot(@Param("categoryName") String categoryName);
 }

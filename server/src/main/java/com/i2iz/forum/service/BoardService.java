@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,23 +23,31 @@ public class BoardService {
     private final MemberRepository memberRepository;
     private final CategoryRepository categoryRepository;
     private final RecommendationRepository recommendationRepository;
+    private final StringRedisTemplate redisTemplate;
+
+    private static final String POST_COUNT_KEY = "board:post:count";
+    private final String NOTICE_CATEGORY = "공지사항";
 
     @Transactional
     public Long write(Board board, String loginId, Long categoryId) {
         Member writer = memberRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new RuntimeException("카테고리를 찾을 수 없습니다."));
 
-        if ("공지사항".equals(category.getName()) && writer.getRole() != UserRole.ADMIN) {
+        if (NOTICE_CATEGORY.equals(category.getName()) && writer.getRole() != UserRole.ADMIN) {
             throw new RuntimeException("공지사항은 관리자만 작성할 수 있습니다.");
         }
 
         board.setWriter(writer);
         board.setCategory(category);
+        Long id = boardRepository.save(board).getId();
 
-        return boardRepository.save(board).getId();
+        if (!NOTICE_CATEGORY.equals(category.getName())) {
+            redisTemplate.opsForValue().increment(POST_COUNT_KEY);
+        }
+
+        return id;
     }
 
     public List<Board> getNotices() {
@@ -53,8 +62,10 @@ public class BoardService {
 
         if (keyword == null || keyword.isBlank()) {
             int offset = page * pageSize;
-            List<Board> content = boardRepository.findPostsDeferredJoin(noticeCategory, pageSize, offset);
-            long total = boardRepository.countPostsExcludingCategory(noticeCategory);
+            List<Board> content = boardRepository.findPostsDeferredJoin(NOTICE_CATEGORY, pageSize, offset);
+
+            String count = redisTemplate.opsForValue().get(POST_COUNT_KEY);
+            long total = (count != null) ? Long.parseLong(count) : 0L;
 
             return new PageImpl<>(content, pageRequest, total);
         }
@@ -84,6 +95,11 @@ public class BoardService {
         if (!board.getWriter().getLoginId().equals(loginId)) {
             throw new RuntimeException("삭제 권한이 없습니다.");
         }
+
+        if (!NOTICE_CATEGORY.equals(board.getCategory().getName())) {
+            redisTemplate.opsForValue().decrement(POST_COUNT_KEY);
+        }
+
         boardRepository.delete(board);
     }
 
