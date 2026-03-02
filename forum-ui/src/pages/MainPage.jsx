@@ -90,7 +90,7 @@ const MainPage = () => {
                     key={post.id}
                     className="flex items-center p-4 hover:bg-gray-50 transition"
                   >
-                    <span className="text-sm text-gray-400 w-10 text-center">
+                    <span className="text-sm text-gray-400 w-20 shrink-0 text-center">
                       {post.id}
                     </span>
                     <div className="flex-1 px-3 flex flex-col">
@@ -125,17 +125,19 @@ const MainPage = () => {
               )}
             </div>
 
-            <div className="p-4 border-t flex justify-center items-center gap-2 bg-[#F7FCF5]">
+            <div className="p-4 border-t flex flex-wrap justify-center items-center gap-2 bg-[#F7FCF5]">
               <Link
                 to={`/?page=${Math.max(0, page - 1)}&searchType=${searchType}&keyword=${keyword}`}
-                className={`text-sm ${page === 0 ? "text-gray-200 pointer-events-none" : "text-gray-500 hover:text-gray-800"}`}
+                className={`text-sm shrink-0 ${page === 0 ? "text-gray-200 pointer-events-none" : "text-gray-500 hover:text-gray-800"}`}
               >
                 이전
               </Link>
-              <div className="flex gap-1">{renderPagination()}</div>
+              <div className="flex flex-wrap justify-center gap-1">
+                {renderPagination()}
+              </div>
               <Link
                 to={`/?page=${Math.min(totalPages - 1, page + 1)}&searchType=${searchType}&keyword=${keyword}`}
-                className={`text-sm ${page >= totalPages - 1 ? "text-gray-200 pointer-events-none" : "text-gray-500 hover:text-gray-800"}`}
+                className={`text-sm shrink-0 ${page >= totalPages - 1 ? "text-gray-200 pointer-events-none" : "text-gray-500 hover:text-gray-800"}`}
               >
                 다음
               </Link>
